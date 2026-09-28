@@ -4,6 +4,8 @@ import type { IfvgEngine, Bar } from '../engine/ifvgEngine';
 type Props = {
   bars: Bar[];
   engine: IfvgEngine;
+  visibleBars: number;
+  follow: boolean;
   bullColor: string;
   bearColor: string;
   lineColor: string;
@@ -50,12 +52,13 @@ export default function FvgChart(props: Props) {
   const drag = useRef<{ x: number; offset: number } | null>(null);
   const [tick, setTick] = useState(0);
 
-  const n = props.bars.length;
+  const realTotal = props.bars.length;
+  const total = Math.min(realTotal, props.visibleBars);
 
   const fit = useCallback(() => {
-    view.current = { offset: 0, bars: n };
+    view.current = { offset: 0, bars: realTotal };
     setTick((t) => t + 1);
-  }, [n]);
+  }, [realTotal]);
 
   // observe wrapper size
   useEffect(() => {
@@ -69,11 +72,20 @@ export default function FvgChart(props: Props) {
     return () => ro.disconnect();
   }, []);
 
-  // reset view when bar count changes
+  // fit all bars when the dataset itself changes
   useEffect(() => {
-    view.current = { offset: 0, bars: n };
+    view.current = { offset: 0, bars: realTotal };
     setTick((t) => t + 1);
-  }, [n]);
+  }, [realTotal]);
+
+  // follow the latest bars while replaying
+  useEffect(() => {
+    if (!props.follow) return;
+    const v = view.current;
+    v.bars = Math.max(10, Math.min(80, total));
+    v.offset = Math.max(0, total - v.bars);
+    setTick((t) => t + 1);
+  }, [props.visibleBars, props.follow, total]);
 
   // draw
   useEffect(() => {
@@ -91,7 +103,6 @@ export default function FvgChart(props: Props) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     const bars = props.bars;
-    const total = bars.length;
     if (total === 0) return;
 
     const padL = 56;
@@ -139,7 +150,6 @@ export default function FvgChart(props: Props) {
     const range = hi - lo || 1;
     const yAt = (p: number) => padT + (1 - (p - lo) / range) * plotH;
 
-    // background
     ctx.fillStyle = BG;
     ctx.fillRect(0, 0, W, H);
 
@@ -159,7 +169,6 @@ export default function FvgChart(props: Props) {
       ctx.stroke();
       ctx.fillText(p.toFixed(2), padL - 6, y);
     }
-    // time labels
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     const visCount = i1 - i0 + 1;
@@ -184,15 +193,11 @@ export default function FvgChart(props: Props) {
             ctx.fillStyle = blend(col, a);
             ctx.fillRect(x1, y1, x2 - x1, y2 - y1);
           };
-          // original FVG portion
           rect(xAt(z.left), yAt(z.top), xAt(z.xval), yAt(z.bot), firstColor, alpha);
-          // inverted portion
           rect(xAt(z.xval), yAt(z.top), xAt(xEnd), yAt(z.bot), secondColor, alpha);
-          // extension
           if (z.state >= 1 && props.extend > 0) {
             rect(xAt(now), yAt(z.top), xAt(now + props.extend), yAt(z.bot), secondColor, alpha * 0.45);
           }
-          // midline
           if (props.showMidLine) {
             ctx.save();
             ctx.strokeStyle = blend(props.lineColor, 0.78);
@@ -254,7 +259,7 @@ export default function FvgChart(props: Props) {
         }
       }
     }
-  }, [props, size, tick]);
+  }, [props, size, tick, total]);
 
   // wheel zoom (non-passive so we can preventDefault)
   useEffect(() => {
@@ -265,19 +270,19 @@ export default function FvgChart(props: Props) {
       const v = view.current;
       const factor = e.deltaY > 0 ? 1.15 : 1 / 1.15;
       let nb = Math.round(v.bars * factor);
-      nb = Math.max(20, Math.min(n, nb));
+      nb = Math.max(20, Math.min(total, nb));
       const rect = c.getBoundingClientRect();
       const plotL = 56;
       const frac = Math.max(0, Math.min(1, (e.clientX - rect.left - plotL) / (rect.width - plotL - 10)));
       const barAt = v.offset + frac * v.bars;
       v.offset = barAt - frac * nb;
       v.bars = nb;
-      clampView(v, n);
+      clampView(v, total);
       setTick((t) => t + 1);
     };
     c.addEventListener('wheel', onWheel, { passive: false });
     return () => c.removeEventListener('wheel', onWheel);
-  }, [n]);
+  }, [total]);
 
   const onPointerDown = (e: React.PointerEvent) => {
     drag.current = { x: e.clientX, offset: view.current.offset };
@@ -292,7 +297,7 @@ export default function FvgChart(props: Props) {
     const dx = e.clientX - drag.current.x;
     const barsMoved = -dx / (plotW / view.current.bars);
     view.current.offset = drag.current.offset + barsMoved;
-    clampView(view.current, n);
+    clampView(view.current, total);
     setTick((t) => t + 1);
   };
   const onPointerUp = () => { drag.current = null; };

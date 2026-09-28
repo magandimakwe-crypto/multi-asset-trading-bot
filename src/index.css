@@ -161,7 +161,102 @@ canvas { display: block; touch-action: none; }
 }
 .actions button:hover { background: #388bfd; }
 
+/* replay + alert controls */
+.replay-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.btn-primary {
+  background: #1f6feb;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.btn-primary:hover { background: #388bfd; }
+.btn-primary:disabled { background: #2a3344; color: #6b7689; cursor: default; }
+.btn-ghost {
+  background: #1c2230;
+  color: #c9d1e0;
+  border: 1px solid #2a3344;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.btn-ghost:hover { background: #243042; }
+.btn-ghost:disabled { color: #6b7689; cursor: default; }
+.progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 120px;
+}
+.progress-bar {
+  flex: 1;
+  height: 6px;
+  background: #151a24;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: #1f6feb;
+  transition: width 0.1s linear;
+}
+.progress-label { font-size: 10px; color: #6b7689; white-space: nowrap; }
+.speed { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #9aa4b2; }
+.speed input { width: 90px; }
+
+.alert-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.alert-row .check { font-size: 11px; }
+
+/* toasts */
+.toasts {
+  position: fixed;
+  top: 52px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 50;
+  pointer-events: none;
+  max-width: 270px;
+}
+.toast {
+  background: #1c2230;
+  border: 1px solid #2a3344;
+  border-left: 3px solid #3b82f6;
+  border-radius: 6px;
+  padding: 8px 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  animation: toastIn 0.2s ease;
+}
+.toast-bounce-up { border-left-color: #26a69a; }
+.toast-bounce-down { border-left-color: #ef5350; }
+.toast-inversion { border-left-color: #f59e0b; }
+.toast-title { font-size: 12px; font-weight: 600; }
+.toast-body { font-size: 11px; color: #9aa4b2; margin-top: 2px; }
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: none; }
+}
+
 @media (max-width: 480px) {
   .app-header h1 span { display: none; }
   .stat { min-width: 44px; padding: 3px 6px; }
+  .toasts { max-width: 200px; top: 48px; }
+  .speed input { width: 70px; }
 }

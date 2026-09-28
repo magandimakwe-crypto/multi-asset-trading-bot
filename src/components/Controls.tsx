@@ -1,18 +1,79 @@
+import { useState } from 'react';
 import type { Params } from '../App';
+import type { AlertSettings } from '../alerts/alertService';
+import { alertService } from '../alerts/alertService';
 
 type Props = {
   params: Params;
   setParams: React.Dispatch<React.SetStateAction<Params>>;
   seed: number;
   setSeed: (n: number) => void;
+  alertSettings: AlertSettings;
+  setAlertSettings: React.Dispatch<React.SetStateAction<AlertSettings>>;
+  playing: boolean;
+  setPlaying: (v: boolean) => void;
+  startReplay: () => void;
+  fedBars: number;
+  totalBars: number;
+  speed: number;
+  setSpeed: (n: number) => void;
 };
 
-export default function Controls({ params, setParams, seed, setSeed }: Props) {
+export default function Controls({
+  params, setParams, seed, setSeed,
+  alertSettings, setAlertSettings,
+  playing, setPlaying, startReplay,
+  fedBars, totalBars, speed, setSpeed,
+}: Props) {
   const set = (k: keyof Params, v: string | number | boolean) =>
     setParams((p) => ({ ...p, [k]: v }));
+  const setAlert = (k: keyof AlertSettings, v: boolean) =>
+    setAlertSettings((s) => ({ ...s, [k]: v }));
+  const [permGranted, setPermGranted] = useState(alertService.permissionGranted);
+
+  const enableNotifications = async () => {
+    const ok = await alertService.requestPermission();
+    setPermGranted(ok);
+  };
+
+  const pct = totalBars > 0 ? Math.round((fedBars / totalBars) * 100) : 0;
 
   return (
     <div className="controls">
+      <div className="controls-title">Replay &amp; Alerts</div>
+      <div className="replay-row">
+        {!playing ? (
+          <button className="btn-primary" onClick={startReplay}>
+            {'\u25B6'} Play
+          </button>
+        ) : (
+          <button className="btn-primary" onClick={() => setPlaying(false)}>{'\u23F8'} Pause</button>
+        )}
+        <button className="btn-ghost" onClick={startReplay}>Restart</button>
+        <div className="progress">
+          <div className="progress-bar"><div className="progress-fill" style={{ width: pct + '%' }} /></div>
+          <span className="progress-label">{fedBars}/{totalBars}</span>
+        </div>
+        <label className="speed">Speed
+          <input type="range" min={10} max={300} value={speed}
+            onChange={(e) => setSpeed(+e.target.value)} />
+        </label>
+      </div>
+
+      <div className="alert-row">
+        <label className="check"><input type="checkbox" checked={alertSettings.enabled}
+          onChange={(e) => setAlert('enabled', e.target.checked)} />Alerts</label>
+        <label className="check"><input type="checkbox" checked={alertSettings.sound}
+          onChange={(e) => setAlert('sound', e.target.checked)} />Sound</label>
+        <label className="check"><input type="checkbox" checked={alertSettings.alertBounce}
+          onChange={(e) => setAlert('alertBounce', e.target.checked)} />On Bounce</label>
+        <label className="check"><input type="checkbox" checked={alertSettings.alertInversion}
+          onChange={(e) => setAlert('alertInversion', e.target.checked)} />On Inversion</label>
+        <button className="btn-ghost" onClick={enableNotifications} disabled={permGranted}>
+          {permGranted ? 'Notifications On' : 'Enable Browser Notifications'}
+        </button>
+      </div>
+
       <div className="controls-title">Parameters &amp; Style</div>
       <div className="grid">
         <label>Show Last
@@ -71,9 +132,7 @@ export default function Controls({ params, setParams, seed, setSeed }: Props) {
         </label>
       </div>
       <div className="actions">
-        <button onClick={() => setSeed(Math.floor(Math.random() * 100000))}>
-          Regenerate Data
-        </button>
+        <button onClick={() => setSeed(Math.floor(Math.random() * 100000))}>Regenerate Data</button>
         <button onClick={() => setSeed(seed + 1)}>Next Seed ({seed})</button>
       </div>
     </div>
