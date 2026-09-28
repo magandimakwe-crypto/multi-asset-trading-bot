@@ -4,6 +4,7 @@ import { generateBars } from './data/sampleData';
 import FvgChart from './components/FvgChart';
 import Controls from './components/Controls';
 import Toasts from './components/Toasts';
+import SignalsDashboard from './components/SignalsDashboard';
 import { alertService, type AlertSettings } from './alerts/alertService';
 
 export type Params = {
@@ -57,6 +58,7 @@ export default function App() {
   const [fedBars, setFedBars] = useState(BAR_COUNT);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(80); // ms per bar
+  const [view, setView] = useState<'chart' | 'signals'>('chart');
 
   const bars = useMemo<Bar[]>(() => generateBars(BAR_COUNT, seed), [seed]);
 
@@ -146,21 +148,29 @@ export default function App() {
           <Stat label="Active" value={stats.active} />
         </div>
       </header>
-      <FvgChart
-        bars={bars}
-        engine={engine}
-        visibleBars={fedBars}
-        follow={playing}
-        bullColor={params.bullColor}
-        bearColor={params.bearColor}
-        lineColor={params.lineColor}
-        opacity={params.opacity}
-        showZones={params.showZones}
-        showMidLine={params.showMidLine}
-        showSignals={params.showSignals}
-        boxCount={params.boxCount}
-        extend={params.extend}
-      />
+      <div className="tabs">
+        <button className={view === 'chart' ? 'tab active' : 'tab'} onClick={() => setView('chart')}>Chart</button>
+        <button className={view === 'signals' ? 'tab active' : 'tab'} onClick={() => setView('signals')}>Signals</button>
+      </div>
+      {view === 'chart' ? (
+        <FvgChart
+          bars={bars}
+          engine={engine}
+          visibleBars={fedBars}
+          follow={playing}
+          bullColor={params.bullColor}
+          bearColor={params.bearColor}
+          lineColor={params.lineColor}
+          opacity={params.opacity}
+          showZones={params.showZones}
+          showMidLine={params.showMidLine}
+          showSignals={params.showSignals}
+          boxCount={params.boxCount}
+          extend={params.extend}
+        />
+      ) : (
+        <SignalsDashboard bars={bars} engine={engine} />
+      )}
       <Toasts />
       <Controls
         params={params}
